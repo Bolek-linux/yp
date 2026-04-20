@@ -1,3 +1,5 @@
+import asyncio
+
 import tls_client
 from datetime import datetime
 from pyrogram import Client, filters
@@ -141,4 +143,7 @@ if __name__ == "__main__":
 
     # Uruchamiamy bota
     print("[*] Uruchamianie bota na Telegramie...")
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     app.run()
