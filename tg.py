@@ -56,7 +56,7 @@ def get_streams_messages():
                     f"🎬 STREAM #{i}\n"
                     f"👤 Użytkownik: `{nickname}`\n"
                     f"📝 Tytuł: {title}\n"
-                    f"🔗 Link: `{stream_url}`\n\n"
+                    f"🔗 Link: {stream_url}\n\n"
                 )
                 blocks.append(block)
 
