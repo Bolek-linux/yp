@@ -16,7 +16,8 @@ from flask import Flask
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# ================= SŁOWNIK PAŃSTW (Dla Fusi) =================
+# ================= SŁOWNIKI PAŃSTW =================
+# Pełny słownik wszystkich państw
 COUNTRY_MAP = {
     # Europa
     "AL": "Albania", "AD": "Andora", "AT": "Austria", "BE": "Belgia", "BY": "Białoruś",
@@ -29,12 +30,51 @@ COUNTRY_MAP = {
     "RS": "Serbia", "SK": "Słowacja", "SI": "Słowenia", "CH": "Szwajcaria", "SE": "Szwecja",
     "UA": "Ukraina", "VA": "Watykan", "GB": "Wielka Brytania", "IT": "Włochy", "CY": "Cypr",
 
-    # Reszta świata (wybrane)
-    "AF": "Afganistan", "SA": "Arabia Saudyjska", "CN": "Chiny", "PH": "Filipiny",
-    "IN": "Indie", "ID": "Indonezja", "JP": "Japonia", "KR": "Korea Południowa",
-    "MY": "Malezja", "SG": "Singapur", "TW": "Tajwan", "TH": "Tajlandia",
-    "VN": "Wietnam", "US": "Stany Zjednoczone", "CA": "Kanada", "BR": "Brazylia",
-    "AR": "Argentyna", "MX": "Meksyk", "EG": "Egipt", "ZA": "RPA", "AU": "Australia"
+    # Azja i Bliski Wschód
+    "AF": "Afganistan", "SA": "Arabia Saudyjska", "AM": "Armenia", "AZ": "Azerbejdżan",
+    "BH": "Bahrajn", "BD": "Bangladesz", "BT": "Bhutan", "CN": "Chiny", "PH": "Filipiny",
+    "GE": "Gruzja", "IN": "Indie", "ID": "Indonezja", "IQ": "Irak", "IR": "Iran", "IL": "Izrael",
+    "JP": "Japonia", "YE": "Jemen", "JO": "Jordania", "KH": "Kambodża", "QA": "Katar",
+    "KZ": "Kazachstan", "KG": "Kirgistan", "KR": "Korea Południowa", "KP": "Korea Północna",
+    "KW": "Kuwejt", "LA": "Laos", "LB": "Liban", "MY": "Malezja", "MV": "Malediwy",
+    "MM": "Mjanma (Birma)", "MN": "Mongolia", "NP": "Nepal", "OM": "Oman", "PK": "Pakistan",
+    "SG": "Singapur", "LK": "Sri Lanka", "SY": "Syria", "TJ": "Tadżykistan", "TH": "Tajlandia",
+    "TW": "Tajwan", "TR": "Turcja", "TM": "Turkmenistan", "UZ": "Uzbekistan", "VN": "Wietnam",
+    "AE": "Zjednoczone Emiraty Arabskie", "HK": "Hongkong", "MO": "Makau",
+
+    # Ameryka Północna i Południowa
+    "AR": "Argentyna", "BS": "Bahamy", "BB": "Barbados", "BZ": "Belize", "BO": "Boliwia",
+    "BR": "Brazylia", "CL": "Chile", "CO": "Kolumbia", "CR": "Kostaryka", "CU": "Kuba",
+    "DO": "Dominikana", "EC": "Ekwador", "GT": "Gwatemala", "HT": "Haiti", "HN": "Honduras",
+    "JM": "Jamajka", "CA": "Kanada", "MX": "Meksyk", "NI": "Nikaragua", "PA": "Panama",
+    "PY": "Paragwaj", "PE": "Peru", "SV": "Salwador", "US": "Stany Zjednoczone",
+    "UY": "Urugwaj", "VE": "Wenezuela", "PR": "Portoryko",
+
+    # Afryka
+    "DZ": "Algieria", "AO": "Angola", "BJ": "Benin", "BW": "Botswana", "BF": "Burkina Faso",
+    "BI": "Burundi", "TD": "Czad", "CD": "Demokratyczna Republika Konga", "EG": "Egipt",
+    "ER": "Erytrea", "ET": "Etiopia", "GA": "Gabon", "GM": "Gambia", "GH": "Ghana",
+    "GN": "Gwinea", "GQ": "Gwinea Równikowa", "CM": "Kamerun", "KE": "Kenia", "KM": "Komory",
+    "CG": "Kongo", "LS": "Lesotho", "LR": "Liberia", "LY": "Libia", "MG": "Madagaskar",
+    "MW": "Malawi", "ML": "Mali", "MA": "Maroko", "MR": "Mauretania", "MU": "Mauritius",
+    "MZ": "Mozambik", "NA": "Namibia", "NE": "Niger", "NG": "Nigeria", "ZA": "RPA",
+    "CF": "Republika Środkowoafrykańska", "RW": "Rwanda", "SN": "Senegal", "SC": "Seszele",
+    "SL": "Sierra Leone", "SO": "Somalia", "SD": "Sudan", "SS": "Sudan Południowy",
+    "SZ": "Eswatini", "TZ": "Tanzania", "TG": "Togo", "TN": "Tunezja", "UG": "Uganda",
+    "CI": "Wybrzeże Kości Słoniowej", "ZM": "Zambia", "ZW": "Zimbabwe",
+
+    # Australia i Oceania
+    "AU": "Australia", "FJ": "Fidżi", "KI": "Kiribati", "MH": "Wyspy Marshalla",
+    "FM": "Mikronezja", "NR": "Nauru", "NZ": "Nowa Zelandia", "PW": "Palau",
+    "PG": "Papua-Nowa Gwinea", "WS": "Samoa", "TO": "Tonga", "TV": "Tuvalu", "VU": "Vanuatu"
+}
+
+# Zbiór kodów ISO dla krajów azjatyckich (do wykluczania przy użyciu flagi "-")
+ASIAN_COUNTRIES = {
+    "AF", "SA", "AM", "AZ", "BH", "BD", "BT", "CN", "PH", "GE", "IN", "ID", "IQ", "IR", "IL",
+    "JP", "YE", "JO", "KH", "QA", "KZ", "KG", "KR", "KP", "KW", "LA", "LB", "MY", "MV", "MM",
+    "MN", "NP", "OM", "PK", "SG", "LK", "SY", "TJ", "TH", "TW", "TR", "TM", "UZ", "VN", "AE",
+    "HK", "MO"
 }
 
 # ================= SESJA GLOBALNA (Dla Yappy) =================
@@ -232,7 +272,7 @@ def build_fusi_request_body(user_conf, device_conf, crypto):
     return params
 
 
-def get_fusi_messages():
+def get_fusi_messages(exclude_asia=False):
     crypto = FusiCrypto()
 
     user_conf = {
@@ -282,20 +322,29 @@ def get_fusi_messages():
             if not rooms:
                 return ["Nie znaleziono żadnych pokoi na liście Fusi."]
 
-            blocks = ["🟣 Znalezione pokoje (Fusi):\n\n"]
+            # Ustawienie nagłówka w zależności od flagi
+            if exclude_asia:
+                blocks = ["🟣 Znalezione pokoje (Fusi - POMINIĘTO AZJĘ):\n\n"]
+            else:
+                blocks = ["🟣 Znalezione pokoje (Fusi):\n\n"]
+
             display_index = 1
 
             for room in rooms:
                 stream_link = room.get("publishUrl", "Brak linku")
+                country_code = room.get("country", "")
 
-                # Odfiltrowanie domen
+                # 1. Odfiltrowanie niechcianych domen
                 if "pull.zl.ox199.com" in stream_link:
+                    continue
+
+                # 2. Odfiltrowanie krajów z Azji (jeśli wpisano "show_fusi -")
+                if exclude_asia and country_code in ASIAN_COUNTRIES:
                     continue
 
                 raw_name = room.get("nickname", "Brak nazwy")
                 raw_title = room.get("introduce", "Brak tytułu")
                 raw_addr = room.get("addr", "")
-                country_code = room.get("country", "")
 
                 encryption = room.get("encryption", 0)
                 toll_price = room.get("tollPrice", 0)
@@ -338,6 +387,10 @@ def get_fusi_messages():
                 blocks.append(block)
                 display_index += 1
 
+            # Jeśli przefiltrowało wszystko i został sam nagłówek
+            if len(blocks) == 1:
+                return ["[-] Brak pokoi spełniających zadane kryteria."]
+
             # Dzielenie wiadomości, żeby nie przekroczyły limitu Telegrama (4096 znaków)
             MAX_LENGTH = 4000
             messages = []
@@ -364,7 +417,7 @@ def get_fusi_messages():
 
 # ================= KOMENDY BOTA =================
 
-# 1. Nowa komenda: /show_yappy
+# 1. Komenda: /show_yappy
 @bot.message_handler(commands=['show_yappy'])
 def show_yappy_command(message):
     wait_msg = bot.reply_to(message, "⏳ Pobieranie listy streamów Yappy...")
@@ -386,11 +439,21 @@ def show_yappy_command(message):
             )
 
 
-# 2. Nowa komenda: /show_fusi
+# 2. Komenda: /show_fusi oraz /show_fusi -
 @bot.message_handler(commands=['show_fusi'])
 def show_fusi_command(message):
-    wait_msg = bot.reply_to(message, "⏳ Pobieranie listy pokoi Fusi, to może chwilę zająć...")
-    messages = get_fusi_messages()
+    # Sprawdzamy czy komenda ma dodany myślnik (np. "/show_fusi -")
+    command_parts = message.text.split()
+    exclude_asia = False
+
+    if len(command_parts) > 1 and command_parts[1] == "-":
+        exclude_asia = True
+
+    text_info = "⏳ Pobieranie listy pokoi Fusi (pomijanie Azji)..." if exclude_asia else "⏳ Pobieranie listy pokoi Fusi..."
+    wait_msg = bot.reply_to(message, text_info)
+
+    # Wywołanie z argumentem mówiącym czy omijać Azję
+    messages = get_fusi_messages(exclude_asia=exclude_asia)
 
     for i, text in enumerate(messages):
         if i == 0:
