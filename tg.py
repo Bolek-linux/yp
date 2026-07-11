@@ -69,7 +69,7 @@ COUNTRY_MAP = {
     "PG": "Papua-Nowa Gwinea", "WS": "Samoa", "TO": "Tonga", "TV": "Tuvalu", "VU": "Vanuatu"
 }
 
-# Zbiór kodów ISO dla krajów azjatyckich (do wykluczania przy użyciu flagi "-")
+# Zbiór kodów ISO dla krajów azjatyckich i bliskowschodnich (do wykluczania)
 ASIAN_COUNTRIES = {
     "AF", "SA", "AM", "AZ", "BH", "BD", "BT", "CN", "PH", "GE", "IN", "ID", "IQ", "IR", "IL",
     "JP", "YE", "JO", "KH", "QA", "KZ", "KG", "KR", "KP", "KW", "LA", "LB", "MY", "MV", "MM",
@@ -338,7 +338,7 @@ def get_fusi_messages(exclude_asia=False):
                 if "pull.zl.ox199.com" in stream_link:
                     continue
 
-                # 2. Odfiltrowanie krajów z Azji (jeśli wpisano "show_fusi -")
+                # 2. Odfiltrowanie krajów z Azji (jeśli włączona flaga)
                 if exclude_asia and country_code in ASIAN_COUNTRIES:
                     continue
 
@@ -439,21 +439,11 @@ def show_yappy_command(message):
             )
 
 
-# 2. Komenda: /show_fusi oraz /show_fusi -
+# 2. Komenda: /show_fusi (bez filtru)
 @bot.message_handler(commands=['show_fusi'])
 def show_fusi_command(message):
-    # Sprawdzamy czy komenda ma dodany myślnik (np. "/show_fusi -")
-    command_parts = message.text.split()
-    exclude_asia = False
-
-    if len(command_parts) > 1 and command_parts[1] == "-":
-        exclude_asia = True
-
-    text_info = "⏳ Pobieranie listy pokoi Fusi (pomijanie Azji)..." if exclude_asia else "⏳ Pobieranie listy pokoi Fusi..."
-    wait_msg = bot.reply_to(message, text_info)
-
-    # Wywołanie z argumentem mówiącym czy omijać Azję
-    messages = get_fusi_messages(exclude_asia=exclude_asia)
+    wait_msg = bot.reply_to(message, "⏳ Pobieranie listy pokoi Fusi...")
+    messages = get_fusi_messages(exclude_asia=False)
 
     for i, text in enumerate(messages):
         if i == 0:
@@ -471,7 +461,29 @@ def show_fusi_command(message):
             )
 
 
-# 3. Obsługa wrzucanych krótkich linków Yappy
+# 3. Komenda: /show_fusi_filter (pomijanie Azji)
+@bot.message_handler(commands=['show_fusi_filter'])
+def show_fusi_filter_command(message):
+    wait_msg = bot.reply_to(message, "⏳ Pobieranie listy pokoi Fusi (pomijanie Azji)...")
+    messages = get_fusi_messages(exclude_asia=True)
+
+    for i, text in enumerate(messages):
+        if i == 0:
+            bot.edit_message_text(
+                text,
+                chat_id=wait_msg.chat.id,
+                message_id=wait_msg.message_id,
+                disable_web_page_preview=True
+            )
+        else:
+            bot.send_message(
+                message.chat.id,
+                text,
+                disable_web_page_preview=True
+            )
+
+
+# 4. Obsługa wrzucanych krótkich linków Yappy
 @bot.message_handler(func=lambda message: "yappy.media/s/" in message.text)
 def handle_yappy_link(message):
     match = re.search(r"(https://yappy\.media/s/[A-Za-z0-9_]+)", message.text)
