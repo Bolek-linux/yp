@@ -5,6 +5,7 @@ import base64
 import hashlib
 import threading
 import urllib.parse
+import time
 from collections import OrderedDict
 from datetime import datetime
 
@@ -19,7 +20,6 @@ bot = telebot.TeleBot(BOT_TOKEN)
 # ================= SŁOWNIKI PAŃSTW =================
 # Pełny słownik wszystkich państw
 COUNTRY_MAP = {
-    # Europa
     "AL": "Albania", "AD": "Andora", "AT": "Austria", "BE": "Belgia", "BY": "Białoruś",
     "BA": "Bośnia i Hercegowina", "BG": "Bułgaria", "HR": "Chorwacja", "ME": "Czarnogóra",
     "CZ": "Czechy", "DK": "Dania", "EE": "Estonia", "FI": "Finlandia", "FR": "Francja",
@@ -30,7 +30,6 @@ COUNTRY_MAP = {
     "RS": "Serbia", "SK": "Słowacja", "SI": "Słowenia", "CH": "Szwajcaria", "SE": "Szwecja",
     "UA": "Ukraina", "VA": "Watykan", "GB": "Wielka Brytania", "IT": "Włochy", "CY": "Cypr",
 
-    # Azja i Bliski Wschód
     "AF": "Afganistan", "SA": "Arabia Saudyjska", "AM": "Armenia", "AZ": "Azerbejdżan",
     "BH": "Bahrajn", "BD": "Bangladesz", "BT": "Bhutan", "CN": "Chiny", "PH": "Filipiny",
     "GE": "Gruzja", "IN": "Indie", "ID": "Indonezja", "IQ": "Irak", "IR": "Iran", "IL": "Izrael",
@@ -42,7 +41,6 @@ COUNTRY_MAP = {
     "TW": "Tajwan", "TR": "Turcja", "TM": "Turkmenistan", "UZ": "Uzbekistan", "VN": "Wietnam",
     "AE": "Zjednoczone Emiraty Arabskie", "HK": "Hongkong", "MO": "Makau",
 
-    # Ameryka Północna i Południowa
     "AR": "Argentyna", "BS": "Bahamy", "BB": "Barbados", "BZ": "Belize", "BO": "Boliwia",
     "BR": "Brazylia", "CL": "Chile", "CO": "Kolumbia", "CR": "Kostaryka", "CU": "Kuba",
     "DO": "Dominikana", "EC": "Ekwador", "GT": "Gwatemala", "HT": "Haiti", "HN": "Honduras",
@@ -50,7 +48,6 @@ COUNTRY_MAP = {
     "PY": "Paragwaj", "PE": "Peru", "SV": "Salwador", "US": "Stany Zjednoczone",
     "UY": "Urugwaj", "VE": "Wenezuela", "PR": "Portoryko",
 
-    # Afryka
     "DZ": "Algieria", "AO": "Angola", "BJ": "Benin", "BW": "Botswana", "BF": "Burkina Faso",
     "BI": "Burundi", "TD": "Czad", "CD": "Demokratyczna Republika Konga", "EG": "Egipt",
     "ER": "Erytrea", "ET": "Etiopia", "GA": "Gabon", "GM": "Gambia", "GH": "Ghana",
@@ -63,7 +60,6 @@ COUNTRY_MAP = {
     "SZ": "Eswatini", "TZ": "Tanzania", "TG": "Togo", "TN": "Tunezja", "UG": "Uganda",
     "CI": "Wybrzeże Kości Słoniowej", "ZM": "Zambia", "ZW": "Zimbabwe",
 
-    # Australia i Oceania
     "AU": "Australia", "FJ": "Fidżi", "KI": "Kiribati", "MH": "Wyspy Marshalla",
     "FM": "Mikronezja", "NR": "Nauru", "NZ": "Nowa Zelandia", "PW": "Palau",
     "PG": "Papua-Nowa Gwinea", "WS": "Samoa", "TO": "Tonga", "TV": "Tuvalu", "VU": "Vanuatu"
@@ -322,7 +318,7 @@ def get_fusi_messages(exclude_asia=False):
             if not rooms:
                 return ["Nie znaleziono żadnych pokoi na liście Fusi."]
 
-            # Ustawienie nagłówka w zależności od flagi
+            # Ustawienie nagłówka
             if exclude_asia:
                 blocks = ["🟣 Znalezione pokoje (Fusi - POMINIĘTO AZJĘ):\n\n"]
             else:
@@ -331,8 +327,15 @@ def get_fusi_messages(exclude_asia=False):
             display_index = 1
 
             for room in rooms:
-                stream_link = room.get("publishUrl", "Brak linku")
-                country_code = room.get("country", "")
+                # ================= POPRAWKA NoneType =================
+                # Zabezpieczenie przed wartością `null` z JSONa (która w pythonie jest None)
+                stream_link = str(room.get("publishUrl") or "Brak linku")
+                country_code = str(room.get("country") or "")
+                raw_name = str(room.get("nickname") or "Brak nazwy")
+                raw_title = str(room.get("introduce") or "Brak tytułu")
+                raw_addr = str(room.get("addr") or "")
+                streamer_uid = str(room.get("uid") or "Brak ID")
+                # =====================================================
 
                 # 1. Odfiltrowanie niechcianych domen
                 if "pull.zl.ox199.com" in stream_link:
@@ -341,10 +344,6 @@ def get_fusi_messages(exclude_asia=False):
                 # 2. Odfiltrowanie krajów z Azji (jeśli włączona flaga)
                 if exclude_asia and country_code in ASIAN_COUNTRIES:
                     continue
-
-                raw_name = room.get("nickname", "Brak nazwy")
-                raw_title = room.get("introduce", "Brak tytułu")
-                raw_addr = room.get("addr", "")
 
                 encryption = room.get("encryption", 0)
                 toll_price = room.get("tollPrice", 0)
@@ -378,6 +377,7 @@ def get_fusi_messages(exclude_asia=False):
                 # Blok tekstu dla jednego pokoju
                 block = (
                     f"[{display_index}] Streamer: {streamer_name}\n"
+                    f"    ID:    `{streamer_uid}`\n"
                     f"    Typ:   {status}\n"
                     f"    Kraj:  {location}\n"
                     f"    Tytuł: {stream_title}\n"
@@ -429,13 +429,15 @@ def show_yappy_command(message):
                 text,
                 chat_id=wait_msg.chat.id,
                 message_id=wait_msg.message_id,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode="Markdown"
             )
         else:
             bot.send_message(
                 message.chat.id,
                 text,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode="Markdown"
             )
 
 
@@ -451,13 +453,15 @@ def show_fusi_command(message):
                 text,
                 chat_id=wait_msg.chat.id,
                 message_id=wait_msg.message_id,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode="Markdown"
             )
         else:
             bot.send_message(
                 message.chat.id,
                 text,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode="Markdown"
             )
 
 
@@ -473,13 +477,15 @@ def show_fusi_filter_command(message):
                 text,
                 chat_id=wait_msg.chat.id,
                 message_id=wait_msg.message_id,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode="Markdown"
             )
         else:
             bot.send_message(
                 message.chat.id,
                 text,
-                disable_web_page_preview=True
+                disable_web_page_preview=True,
+                parse_mode="Markdown"
             )
 
 
@@ -524,4 +530,10 @@ if __name__ == "__main__":
     threading.Thread(target=run_web).start()
 
     print("[*] Start bota na Telegramie...")
-    bot.infinity_polling()
+    # Nieskończona pętla zapobiegająca ubiciu bota przy problemach z siecią Render
+    while True:
+        try:
+            bot.infinity_polling(timeout=10, long_polling_timeout=5)
+        except Exception as e:
+            print(f"[!] Błąd Telegram API (Zostanie zrestartowany): {e}")
+            time.sleep(5)
